@@ -349,6 +349,8 @@ void AddSC_thunder_bluff();
 void AddSC_ungoro_crater();
 void AddSC_winterspring();
 
+void AddSC_gilneas(); //Gilneas City, Merchant Square
+
 //Northrend
 void AddSC_boss_slad_ran();
 void AddSC_boss_moorabi();
@@ -967,6 +969,8 @@ void AddKalimdorScripts()
     AddSC_thunder_bluff();
     AddSC_ungoro_crater();
     AddSC_winterspring();
+
+    AddSC_gilneas();						//Gilneas City, Merchant Square
     
 #endif
 }
