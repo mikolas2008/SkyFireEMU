@@ -245,6 +245,7 @@ void AddSC_eastern_plaguelands();
 void AddSC_elwynn_forest();
 void AddSC_eversong_woods();
 void AddSC_ghostlands();
+void AddSC_gilneas();
 void AddSC_hinterlands();
 void AddSC_ironforge();
 void AddSC_isle_of_queldanas();
@@ -348,8 +349,6 @@ void AddSC_thousand_needles();
 void AddSC_thunder_bluff();
 void AddSC_ungoro_crater();
 void AddSC_winterspring();
-
-void AddSC_gilneas(); //Gilneas City
 
 //Northrend
 void AddSC_boss_slad_ran();
@@ -862,6 +861,7 @@ void AddEasternKingdomsScripts()
     AddSC_elwynn_forest();
     AddSC_eversong_woods();
     AddSC_ghostlands();
+    AddSC_gilneas();
     AddSC_hinterlands();
     AddSC_ironforge();
     AddSC_isle_of_queldanas();
@@ -969,8 +969,6 @@ void AddKalimdorScripts()
     AddSC_thunder_bluff();
     AddSC_ungoro_crater();
     AddSC_winterspring();
-
-    AddSC_gilneas();                   //Gilneas City
     
 #endif
 }

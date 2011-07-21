@@ -490,33 +490,34 @@ public:
 
     bool OnGossipHello(Player *pPlayer, GameObject *pGO)
     {
-        pGO->Use(pPlayer);
+		if (pPlayer->GetQuestStatus(q_evac_merch_sq) == QUEST_STATUS_INCOMPLETE)
+		{
+			pGO->Use(pPlayer);
 
         creatureID = RAND(NPC_RAMPAGING_WORGEN_2, NPC_FRIGHTENED_CITIZEN_1, NPC_FRIGHTENED_CITIZEN_2); //Random creature
 
-        angle=pGO->GetOrientation();
-        x=pGO->GetPositionX()-cos(angle)*2;
-        y=pGO->GetPositionY()-sin(angle)*2;
-        z=pGO->GetPositionZ();
-        
-        
-        if (Creature *spawnedCreature = pGO->SummonCreature(creatureID,x,y,z,angle,TEMPSUMMON_TIMED_DESPAWN,summon1_ttl))
-        {
-            spawnedCreature->SetPhaseMask(2, 1);
-            if (creatureID == NPC_RAMPAGING_WORGEN_2)
-            {
-                spawnedCreature->getThreatManager().resetAllAggro();
-                pPlayer->AddThreat(spawnedCreature, 100000.0f);
-                spawnedCreature->AddThreat(pPlayer, 100000.0f);
-                spawnedCreature->AI()->AttackStart(pPlayer);
-            }
-            else if (pPlayer->GetQuestStatus(q_evac_merch_sq) == QUEST_STATUS_INCOMPLETE)
-            {
-                pPlayer->KilledMonsterCredit(35830, 0);
-                spawnedCreature->Respawn(1);
-            }
-        }
-            
+			angle=pGO->GetOrientation();
+			x=pGO->GetPositionX()-cos(angle)*2;
+			y=pGO->GetPositionY()-sin(angle)*2;
+			z=pGO->GetPositionZ();
+			if (Creature *spawnedCreature = pGO->SummonCreature(creatureID,x,y,z,angle,TEMPSUMMON_TIMED_DESPAWN,summon1_ttl))
+			{
+				spawnedCreature->SetPhaseMask(2, 1);
+				if (creatureID == NPC_RAMPAGING_WORGEN_2)
+				{
+					spawnedCreature->getThreatManager().resetAllAggro();
+					pPlayer->AddThreat(spawnedCreature, 100000.0f);
+					spawnedCreature->AddThreat(pPlayer, 100000.0f);
+					spawnedCreature->AI()->AttackStart(pPlayer);
+				}
+				else 
+				{
+					pPlayer->KilledMonsterCredit(35830, 0);
+					spawnedCreature->Respawn(1);
+				}
+			}
+			return true;
+		}    
         return false;
     }
 };
