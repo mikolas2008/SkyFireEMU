@@ -1,4 +1,6 @@
 -- Script Texts --
+DELETE FROM `creature_text` WHERE `entry` = '34850';
+
 -- Prince Liam Greymane
 REPLACE INTO `script_texts` (`npc_entry`, `entry`, `content_default`, `content_loc1`, `content_loc2`, `content_loc3`, `content_loc4`, `content_loc5`, `content_loc6`, `content_loc7`, `content_loc8`, `sound`, `type`, `language`, `emote`, `comment`) values
 ('34850','-1638000','I want the perimeter secured and the gates manned by two guards at all times. No one gets in, no one gets out.',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,'19615','0','0','1','SAY_PRINCE_LIAM_GREYMANE_1');
@@ -7,7 +9,7 @@ REPLACE INTO `script_texts` (`npc_entry`, `entry`, `content_default`, `content_l
 REPLACE INTO `script_texts` (`npc_entry`, `entry`, `content_default`, `content_loc1`, `content_loc2`, `content_loc3`, `content_loc4`, `content_loc5`, `content_loc6`, `content_loc7`, `content_loc8`, `sound`, `type`, `language`, `emote`, `comment`) values
 ('34850','-1638002','Stand ready, guards! We don\'t know how many intruders we\'re dealing with, but the Headlands are overrun and we\'re cut off from the harbor towns. Expect to be outnumbered.',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,'19614','0','0','1','SAY_PRINCE_LIAM_GREYMANE_3');
 
--- Panicked Citizen
+-- Frightened Citizen
 REPLACE INTO `script_texts` (`npc_entry`, `entry`, `content_default`, `content_loc1`, `content_loc2`, `content_loc3`, `content_loc4`, `content_loc5`, `content_loc6`, `content_loc7`, `content_loc8`, `sound`, `type`, `language`, `emote`, `comment`) values
 ('0','-1638003','Protect me, please!',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,'0','0','0','0','SAY_CITIZEN_1');
 REPLACE INTO `script_texts` (`npc_entry`, `entry`, `content_default`, `content_loc1`, `content_loc2`, `content_loc3`, `content_loc4`, `content_loc5`, `content_loc6`, `content_loc7`, `content_loc8`, `sound`, `type`, `language`, `emote`, `comment`) values
