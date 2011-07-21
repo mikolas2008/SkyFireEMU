@@ -379,36 +379,37 @@ public:
 
     bool OnGossipHello(Player *pPlayer, GameObject *pGO)
     {
-        pGO->Use(pPlayer);
-        spawnID=urand(1, 3);
+		if (pPlayer->GetQuestStatus(q_evac_merch_sq) == QUEST_STATUS_INCOMPLETE)
+		{
+			pGO->Use(pPlayer);
+			spawnID=urand(1, 3);
 
-        if (spawnID == 1) creatureID = worgen2;
-        if (spawnID == 2) creatureID = citizen1;
-        if (spawnID == 3) creatureID = citizen2;
+			if (spawnID == 1) creatureID = worgen2;
+			if (spawnID == 2) creatureID = citizen1;
+			if (spawnID == 3) creatureID = citizen2;
 
-        angle=pGO->GetOrientation();
-        x=pGO->GetPositionX()-cos(angle)*2;
-        y=pGO->GetPositionY()-sin(angle)*2;
-        z=pGO->GetPositionZ();
-        
-        
-        if (Creature *spawnedCreature = pGO->SummonCreature(creatureID,x,y,z,angle,TEMPSUMMON_TIMED_DESPAWN,summon1_ttl))
-        {
-            spawnedCreature->SetPhaseMask(2, 1);
-            if (creatureID == worgen2)
-            {
-                spawnedCreature->getThreatManager().resetAllAggro();
-                pPlayer->AddThreat(spawnedCreature, 100000.0f);
-                spawnedCreature->AddThreat(pPlayer, 100000.0f);
-                spawnedCreature->AI()->AttackStart(pPlayer);
-            }
-            else if (pPlayer->GetQuestStatus(q_evac_merch_sq) == QUEST_STATUS_INCOMPLETE)
-            {
-                pPlayer->KilledMonsterCredit(35830, 0);
-                spawnedCreature->Respawn(1);
-            }
-        }
-            
+			angle=pGO->GetOrientation();
+			x=pGO->GetPositionX()-cos(angle)*2;
+			y=pGO->GetPositionY()-sin(angle)*2;
+			z=pGO->GetPositionZ();
+			if (Creature *spawnedCreature = pGO->SummonCreature(creatureID,x,y,z,angle,TEMPSUMMON_TIMED_DESPAWN,summon1_ttl))
+			{
+				spawnedCreature->SetPhaseMask(2, 1);
+				if (creatureID == worgen2)
+				{
+					spawnedCreature->getThreatManager().resetAllAggro();
+					pPlayer->AddThreat(spawnedCreature, 100000.0f);
+					spawnedCreature->AddThreat(pPlayer, 100000.0f);
+					spawnedCreature->AI()->AttackStart(pPlayer);
+				}
+				else 
+				{
+					pPlayer->KilledMonsterCredit(35830, 0);
+					spawnedCreature->Respawn(1);
+				}
+			}
+			return true;
+		}    
         return false;
     }
 };
