@@ -861,7 +861,7 @@ void AddEasternKingdomsScripts()
     AddSC_elwynn_forest();
     AddSC_eversong_woods();
     AddSC_ghostlands();
-	AddSC_gilneas();
+    AddSC_gilneas();
     AddSC_hinterlands();
     AddSC_ironforge();
     AddSC_isle_of_queldanas();
