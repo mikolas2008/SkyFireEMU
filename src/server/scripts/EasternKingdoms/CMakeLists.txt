@@ -199,7 +199,6 @@ set(scripts_STAT_SRCS
   EasternKingdoms/Karazhan/boss_moroes.cpp
   EasternKingdoms/Karazhan/boss_terestian_illhoof.cpp
   EasternKingdoms/Karazhan/karazhan.h
-  EasternKingdoms/Gilneas/gilneas_quest.cpp
   EasternKingdoms/gilneas.cpp
   EasternKingdoms/BaradinHold/baradin_hold.h
   EasternKingdoms/BaradinHold/instance_baradin_hold.cpp
