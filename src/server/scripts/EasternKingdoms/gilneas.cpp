@@ -72,7 +72,7 @@ enum eGilneasCityPhase2
 };
 
 /*######
-## npc_prince_liam_greymane
+## npc_prince_liam_greymane_phase1
 ######*/
 
 class npc_prince_liam_greymane_phase1 : public CreatureScript
@@ -114,15 +114,15 @@ public:
                         case 1:
                             DoScriptText(SAY_PRINCE_LIAM_GREYMANE_1, me);
                             cSay++;
-                        break;
+							break;
                         case 2:
                             DoScriptText(SAY_PRINCE_LIAM_GREYMANE_2, me);
                             cSay++;
-                        break;
+							break;
                         case 3:
                             DoScriptText(SAY_PRINCE_LIAM_GREYMANE_3, me);
-                            cSay = 1; //Reset on 3
-                        break;
+                            cSay = 1; //Reset on 1
+							break;
                     }
 
                     tSay = DELAY_SAY_PRINCE_LIAM_GREYMANE; //Reset the timer
@@ -131,6 +131,7 @@ public:
                 {
                     tSay -= diff;
                 }
+				return;
             }
         }
     };
@@ -323,7 +324,12 @@ public:
         void UpdateAI(const uint32 diff)
         {
             if (!UpdateVictim())
+			{
+				//non-combat say, yell TODO
                 return;
+			}
+
+			//combat yell TODO
 
             if (tSound <= diff)
             {
@@ -361,8 +367,8 @@ public:
 
 enum eRampaging_worgen
 {
-    #define spell_enrage 8599
-    #define enrage_cd 30000
+    #define SPELL_ENRAGE 8599
+    #define CD_ENRAGE 30000
 };
 
 class npc_rampaging_worgen : public CreatureScript
@@ -433,8 +439,8 @@ public:
             {
                 if (me->GetHealthPct() <= 30)
                 {
-                    DoCast(me, spell_enrage);
-                    tEnrage = enrage_cd;
+                    DoCast(me, SPELL_ENRAGE);
+                    tEnrage = CD_ENRAGE;
                 }
             }
             else tEnrage -= diff;
@@ -476,8 +482,8 @@ public:
 
 enum eMerchant_square_door
 {
-    #define summon1_ttl 30000
-    #define q_evac_merch_sq 14098
+    #define SUMMON1_TTL 30000
+    #define QUEST_EVAC_MERC_SQUA 14098
 };
 
 class go_merchant_square_door : public GameObjectScript
@@ -490,7 +496,7 @@ public:
 
     bool OnGossipHello(Player *pPlayer, GameObject *pGO)
     {
-		if (pPlayer->GetQuestStatus(q_evac_merch_sq) == QUEST_STATUS_INCOMPLETE)
+		if (pPlayer->GetQuestStatus(QUEST_EVAC_MERC_SQUA) == QUEST_STATUS_INCOMPLETE)
 		{
 			pGO->Use(pPlayer);
 
@@ -500,7 +506,7 @@ public:
 			x=pGO->GetPositionX()-cos(angle)*2;
 			y=pGO->GetPositionY()-sin(angle)*2;
 			z=pGO->GetPositionZ();
-			if (Creature *spawnedCreature = pGO->SummonCreature(creatureID,x,y,z,angle,TEMPSUMMON_TIMED_DESPAWN,summon1_ttl))
+			if (Creature *spawnedCreature = pGO->SummonCreature(creatureID,x,y,z,angle,TEMPSUMMON_TIMED_DESPAWN,SUMMON1_TTL))
 			{
 				spawnedCreature->SetPhaseMask(2, 1);
 				if (creatureID == NPC_RAMPAGING_WORGEN_2)
