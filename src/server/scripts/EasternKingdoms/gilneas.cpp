@@ -49,6 +49,13 @@ enum eGilneasCityPhase1
     SAY_PRINCE_LIAM_GREYMANE_2 = -1638001,
     SAY_PRINCE_LIAM_GREYMANE_3 = -1638002,
     DELAY_SAY_PRINCE_LIAM_GREYMANE = 20000, //20 seconds repetition time
+
+    SAY_PANICKED_CITIZEN_1 = -1638016,
+    SAY_PANICKED_CITIZEN_2 = -1638017,
+    SAY_PANICKED_CITIZEN_3 = -1638018,
+    SAY_PANICKED_CITIZEN_4 = -1638019,
+    #define DELAY_EMOTE_PANICKED_CITIZEN urand(5000, 15000) //5-15 second time... Using #define cuz CONSTANT = value does use Textual substitution and doesn't allows functions
+    #define DELAY_SAY_PANICKED_CITIZEN urand(45000, 120000)
 };
 //Phase 2
 enum eGilneasCityPhase2
@@ -95,7 +102,7 @@ public:
         //Evade or Respawn
         void Reset()
         {
-            tSay = DELAY_SAY_PRINCE_LIAM_GREYMANE;
+            tSay = DELAY_SAY_PRINCE_LIAM_GREYMANE; //Reset timer
             cSay = 1; //Start from 1
         }
 
@@ -135,6 +142,99 @@ public:
             }
         }
     };
+};
+
+/*######
+## npc_panicked_citizen
+######*/
+
+uint32 guid_panicked_nextsay = 0; //GUID of the Panicked Citizen that will say random text, this is to prevent more than 1 npc speaking
+uint32 tSay_panicked = DELAY_SAY_PANICKED_CITIZEN; //Time left to say
+class npc_panicked_citizen : public CreatureScript
+{
+public:
+    npc_panicked_citizen() : CreatureScript("npc_panicked_citizen") { }
+
+    CreatureAI* GetAI(Creature* pCreature) const
+    {
+        return new npc_panicked_citizenAI (pCreature);
+    }
+
+    struct npc_panicked_citizenAI : public ScriptedAI
+    {
+        npc_panicked_citizenAI(Creature *c) : ScriptedAI(c) {}
+        
+        uint32 tEmote; //Time left for doing an emote
+
+        //Evade or Respawn
+        void Reset()
+        {
+            if (me->GetPhaseMask() == 7)
+            {
+                tEmote = DELAY_EMOTE_PANICKED_CITIZEN; //Reset timer
+                me->SetUInt32Value(UNIT_NPC_EMOTESTATE, 0); //Reset emote state
+            }
+        }
+        
+        void UpdateAI(const uint32 diff)
+        {
+            //Out of combat and in Phase 7
+            if (!me->getVictim() && me->GetPhaseMask() == 7)
+            {
+                //Timed emote
+                if(tEmote <= diff)
+                {
+                    //Do random emote (1, 5, 18, 20, 430)
+                    me->HandleEmoteCommand(RAND(
+                        EMOTE_ONESHOT_TALK,
+                        EMOTE_ONESHOT_EXCLAMATION,
+                        EMOTE_ONESHOT_CRY,
+                        EMOTE_ONESHOT_BEG));
+
+                    tEmote = DELAY_EMOTE_PANICKED_CITIZEN; //Reset timer
+                }
+                else
+                {
+                    tEmote -= diff;
+                }
+
+                //Randomly select an NPC to say the next random text
+                if(!guid_panicked_nextsay)
+                {
+                    if(urand(0,1))
+                    {
+                        guid_panicked_nextsay = me->GetGUIDLow();
+                    }
+                }
+
+                //If this is the selected npc to say
+                if(guid_panicked_nextsay == me->GetGUIDLow())
+                {
+                    //Timed say
+                    if(tSay_panicked <= diff)
+                    {
+                    
+                        //Say random
+                        DoScriptText(RAND(
+                            SAY_PANICKED_CITIZEN_1,
+                            SAY_PANICKED_CITIZEN_2,
+                            SAY_PANICKED_CITIZEN_3,
+                            SAY_PANICKED_CITIZEN_4), 
+                        me);
+
+                        guid_panicked_nextsay = 0; //Reset Selected next NPC
+                        tSay_panicked = DELAY_SAY_PANICKED_CITIZEN; //Reset timer
+                        tEmote = DELAY_EMOTE_PANICKED_CITIZEN; //Reset emote timer
+                    }
+                    else
+                    {
+                        tSay_panicked -= diff;
+                    }
+                }
+            }
+        }
+    };
+
 };
 
 /*######
@@ -615,4 +715,5 @@ void AddSC_gilneas()
     new go_merchant_square_door();
     new npc_frightened_citizen();
     new npc_lieutenant_walden();
+    new npc_panicked_citizen();
 }
