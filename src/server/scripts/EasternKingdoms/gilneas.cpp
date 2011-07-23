@@ -289,12 +289,12 @@ public:
             tSound = DELAY_SOUND;
             playSnd = false;
         }
-
-        void sQuestReward(Player *pPlayer, const Quest *pQuest, uint32 data)
-        {
-            if (pQuest->GetQuestId() == 14098 && pPlayer->GetPhaseMask() == 2)
-                pPlayer->SetAuraStack(SPELL_PHASE_4, pPlayer, 1); //phaseshift
-        }
+		
+		void sGossipHello(Player *pPlayer)
+		{
+			if ((pPlayer->GetQuestStatus(14094) == QUEST_STATUS_REWARDED) && (pPlayer->GetPhaseMask() == 2))
+				pPlayer->SetAuraStack(SPELL_PHASE_4, pPlayer, 1); //phaseshift
+		}
 
         void DamageTaken(Unit * pWho, uint32 &uiDamage)
         {
