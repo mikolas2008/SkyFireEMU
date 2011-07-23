@@ -53,8 +53,14 @@ enum eGilneasCityPhase1
     SAY_PANICKED_CITIZEN_1 = -1638016,
     SAY_PANICKED_CITIZEN_2 = -1638017,
     SAY_PANICKED_CITIZEN_3 = -1638018,
+    SAY_PANICKED_CITIZEN_4 = -1638019,
     #define DELAY_EMOTE_PANICKED_CITIZEN urand(5000, 15000) //5-15 second time... Using #define cuz CONSTANT = value does use Textual substitution and doesn't allows functions
-    #define DELAY_SAY_PANICKED_CITIZEN urand(45000, 120000)
+    #define DELAY_SAY_PANICKED_CITIZEN urand(30000, 120000)
+
+    SAY_GILNEAS_CITY_GUARD_GATE_1 = -1638022,
+    SAY_GILNEAS_CITY_GUARD_GATE_2 = -1638023,
+    SAY_GILNEAS_CITY_GUARD_GATE_3 = -1638024,
+    #define DELAY_SAY_GILNEAS_CITY_GUARD_GATE urand(30000, 120000)
 };
 //Phase 2
 enum eGilneasCityPhase2
@@ -168,7 +174,7 @@ public:
         //Evade or Respawn
         void Reset()
         {
-            if (me->GetPhaseMask() == 7)
+            if (me->GetPhaseMask() == 1)
             {
                 tEmote = DELAY_EMOTE_PANICKED_CITIZEN; //Reset timer
                 me->SetUInt32Value(UNIT_NPC_EMOTESTATE, 0); //Reset emote state
@@ -177,8 +183,8 @@ public:
         
         void UpdateAI(const uint32 diff)
         {
-            //Out of combat and in Phase 7
-            if (!me->getVictim() && me->GetPhaseMask() == 7)
+            //Out of combat and in Phase 1
+            if (!me->getVictim() && me->GetPhaseMask() == 1)
             {
                 //Timed emote
                 if(tEmote <= diff)
@@ -218,7 +224,8 @@ public:
                         DoScriptText(RAND(
                             SAY_PANICKED_CITIZEN_1,
                             SAY_PANICKED_CITIZEN_2,
-                            SAY_PANICKED_CITIZEN_3), 
+                            SAY_PANICKED_CITIZEN_3,
+                            SAY_PANICKED_CITIZEN_4), 
                         me);
 
                         guid_panicked_nextsay = 0; //Reset Selected next NPC
@@ -263,13 +270,68 @@ public:
 };
 
 /*######
-## npc_gilneas_city_guard
+## npc_gilneas_city_guard_phase1
 ######*/
-
-class npc_gilneas_city_guard : public CreatureScript
+class npc_gilneas_city_guard_phase1 : public CreatureScript
 {
 public:
-    npc_gilneas_city_guard() : CreatureScript("npc_gilneas_city_guard") { }
+    npc_gilneas_city_guard_phase1() : CreatureScript("npc_gilneas_city_guard_phase1") { }
+
+    CreatureAI* GetAI(Creature* pCreature) const
+    {
+        return new npc_gilneas_city_guard_phase1AI (pCreature);
+    }
+
+    struct npc_gilneas_city_guard_phase1AI : public ScriptedAI
+    {
+        npc_gilneas_city_guard_phase1AI(Creature *c) : ScriptedAI(c) {}
+        
+        uint32 tSay; //Time left for say
+
+        //Evade or Respawn
+        void Reset()
+        {
+            if (me->GetUInt32Value(UNIT_FIELD_FLAGS) == 134217728)
+            {
+                tSay = DELAY_SAY_GILNEAS_CITY_GUARD_GATE; //Reset timer
+            }
+        }
+        
+        void UpdateAI(const uint32 diff)
+        {
+            //Out of combat and
+            if (me->GetUInt32Value(UNIT_FIELD_FLAGS) == 134217728)
+            {
+                //Timed say
+                if(tSay <= diff)
+                {
+                    //Random say
+                    DoScriptText(RAND(
+                        SAY_GILNEAS_CITY_GUARD_GATE_1,
+                        SAY_GILNEAS_CITY_GUARD_GATE_2,
+                        SAY_GILNEAS_CITY_GUARD_GATE_3),
+                    me);
+
+                    tSay = DELAY_SAY_GILNEAS_CITY_GUARD_GATE; //Reset timer
+                }
+                else
+                {
+                    tSay -= diff;
+                }
+            }
+        }
+    };
+
+};
+
+/*######
+## npc_gilneas_city_guard_phase2
+######*/
+
+class npc_gilneas_city_guard_phase2 : public CreatureScript
+{
+public:
+    npc_gilneas_city_guard_phase2() : CreatureScript("npc_gilneas_city_guard_phase2") { }
 
     CreatureAI* GetAI(Creature* pCreature) const
     {
@@ -706,12 +768,13 @@ public:
 
 void AddSC_gilneas()
 {
-    new npc_gilneas_city_guard();
+    new npc_gilneas_city_guard_phase1();
+    new npc_gilneas_city_guard_phase2();
     new npc_prince_liam_greymane_phase1();
     new npc_prince_liam_greymane_phase2();
     new npc_rampaging_worgen();
     new go_merchant_square_door();
     new npc_frightened_citizen();
-    new npc_lieutenant_walden();
     new npc_panicked_citizen();
+    new npc_lieutenant_walden();
 }
