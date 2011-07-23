@@ -53,7 +53,6 @@ enum eGilneasCityPhase1
     SAY_PANICKED_CITIZEN_1 = -1638016,
     SAY_PANICKED_CITIZEN_2 = -1638017,
     SAY_PANICKED_CITIZEN_3 = -1638018,
-    SAY_PANICKED_CITIZEN_4 = -1638019,
     #define DELAY_EMOTE_PANICKED_CITIZEN urand(5000, 15000) //5-15 second time... Using #define cuz CONSTANT = value does use Textual substitution and doesn't allows functions
     #define DELAY_SAY_PANICKED_CITIZEN urand(45000, 120000)
 };
@@ -189,7 +188,8 @@ public:
                         EMOTE_ONESHOT_TALK,
                         EMOTE_ONESHOT_EXCLAMATION,
                         EMOTE_ONESHOT_CRY,
-                        EMOTE_ONESHOT_BEG));
+                        EMOTE_ONESHOT_BEG,
+                        EMOTE_ONESHOT_COWER));
 
                     tEmote = DELAY_EMOTE_PANICKED_CITIZEN; //Reset timer
                 }
@@ -218,13 +218,11 @@ public:
                         DoScriptText(RAND(
                             SAY_PANICKED_CITIZEN_1,
                             SAY_PANICKED_CITIZEN_2,
-                            SAY_PANICKED_CITIZEN_3,
-                            SAY_PANICKED_CITIZEN_4), 
+                            SAY_PANICKED_CITIZEN_3), 
                         me);
 
                         guid_panicked_nextsay = 0; //Reset Selected next NPC
                         tSay_panicked = DELAY_SAY_PANICKED_CITIZEN; //Reset timer
-                        tEmote = DELAY_EMOTE_PANICKED_CITIZEN; //Reset emote timer
                     }
                     else
                     {
