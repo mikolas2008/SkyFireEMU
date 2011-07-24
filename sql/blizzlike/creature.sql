@@ -99,7 +99,6 @@ DELETE FROM `creature` WHERE `id` IN (34981, 35836); -- spawned by script
 
 -- 34851 Panicked Citizen spawns
 DELETE FROM `creature` WHERE `id` = '34851' AND `map` = '638';
-INSERT INTO `creature` VALUES (@, 34851, 638, 1, 1, 0, 0, -1566.02, 1390.83, 36.0032, 6.21599, 300, 0, 0, 42, 0, 0, 2, 0, 0, 0);
 INSERT INTO `creature` VALUES (@, 34851, 638, 1, 1, 0, 0, -1559.38, 1384.23, 36.166, 0.112085, 300, 0, 0, 42, 0, 0, 0, 0, 0, 0);
 INSERT INTO `creature` VALUES (@, 34851, 638, 1, 1, 0, 0, -1559.17, 1419.57, 35.7244, 5.21325, 300, 0, 0, 42, 0, 0, 0, 0, 0, 0);
 INSERT INTO `creature` VALUES (@, 34851, 638, 1, 1, 0, 0, -1511.63, 1437.42, 35.8474, 4.81264, 300, 0, 0, 42, 0, 0, 0, 0, 0, 0);
@@ -108,6 +107,9 @@ INSERT INTO `creature` VALUES (@, 34851, 638, 1, 1, 0, 0, -1453.03, 1437.2, 35.8
 INSERT INTO `creature` VALUES (@, 34851, 638, 1, 1, 0, 0, -1458.73, 1419.19, 35.556, 0.913914, 300, 0, 0, 42, 0, 0, 0, 0, 0, 0);
 INSERT INTO `creature` VALUES (@, 34851, 638, 1, 1, 0, 0, -1469.81, 1384.24, 36.0044, 0.818889, 300, 0, 0, 42, 0, 0, 0, 0, 0, 0);
 INSERT INTO `creature` VALUES (@, 34851, 638, 1, 1, 0, 0, -1512.09, 1382.37, 35.9188, 0.738001, 300, 0, 0, 42, 0, 0, 0, 0, 0, 0);
+
+-- 34851 Panicked Citizen spawns for running to their homes
+
 
 -- 44086 Panicked Citizen spawns
 DELETE FROM `creature` WHERE `id` = '44086' AND `map` = '638';
