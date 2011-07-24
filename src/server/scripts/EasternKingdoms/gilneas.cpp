@@ -300,15 +300,15 @@ public:
             if (pWho->GetTypeId() == TYPEID_PLAYER)
             {
                 me->getThreatManager().resetAllAggro();
-                pWho->AddThreat(me, 100000.0f);
-                me->AddThreat(pWho, 100000.0f);
+                pWho->AddThreat(me, 1.0f);
+                me->AddThreat(pWho, 1.0f);
                 me->AI()->AttackStart(pWho);
                 dmgCount = 0;
             }
             else if (pWho->isPet())
             {
                 me->getThreatManager().resetAllAggro();
-                me->AddThreat(pWho, 100000.0f);
+                me->AddThreat(pWho, 1.0f);
                 me->AI()->AttackStart(pWho);
                 dmgCount = 0;
             }
@@ -381,6 +381,7 @@ public:
         uint32 tSound;
         uint32 dmgCount;
         bool playSnd;
+		char* updateDelay;
 
         void Reset()
         {
@@ -401,15 +402,15 @@ public:
             if (pWho->GetTypeId() == TYPEID_PLAYER)
             {
                 me->getThreatManager().resetAllAggro();
-                pWho->AddThreat(me, 100000.0f);
-                me->AddThreat(pWho, 100000.0f);
+                pWho->AddThreat(me, 1.0f);
+                me->AddThreat(pWho, 1.0f);
                 me->AI()->AttackStart(pWho);
                 dmgCount = 0;
             }
             else if (pWho->isPet())
             {
                 me->getThreatManager().resetAllAggro();
-                me->AddThreat(pWho, 100000.0f);
+                me->AddThreat(pWho, 1.0f);
                 me->AI()->AttackStart(pWho);
                 dmgCount = 0;
             }
@@ -423,13 +424,7 @@ public:
 
         void UpdateAI(const uint32 diff)
         {
-            if (!UpdateVictim())
-			{
-				//non-combat say, yell TODO
-                return;
-			}
-
-			//combat yell TODO
+            if (!UpdateVictim()) return;
 
             if (tSound <= diff)
             {
@@ -489,8 +484,8 @@ public:
         uint32 dmgCount;
         uint32 tAnimate;
         uint32 tSound;
-        bool playSound;
-
+        bool playSound, willCastEnrage;
+		
         void Reset()
         {
             tEnrage = 0;
@@ -498,6 +493,7 @@ public:
             tAnimate = DELAY_ANIMATE;
             tSound = DELAY_SOUND;
             playSound = false;
+			willCastEnrage = urand(0, 1);
         }
 
         void DamageDealt(Unit* target, uint32& damage, DamageEffectType damageType)
@@ -511,20 +507,20 @@ public:
             if (pWho->GetTypeId() == TYPEID_PLAYER)
             {
                 me->getThreatManager().resetAllAggro();
-                pWho->AddThreat(me, 100000.0f);
-                me->AddThreat(pWho, 100000.0f);
+                pWho->AddThreat(me, 1.0f);
+                me->AddThreat(pWho, 1.0f);
                 me->AI()->AttackStart(pWho);
                 dmgCount = 0;
             }
             else if (pWho->isPet())
             {
                 me->getThreatManager().resetAllAggro();
-                me->AddThreat(pWho, 100000.0f);
+                me->AddThreat(pWho, 1.0f);
                 me->AI()->AttackStart(pWho);
                 dmgCount = 0;
             }
         }
-
+		
         void UpdateAI(const uint32 diff)
         {
             if (me->isAlive() && !me->isInCombat() && (me->GetDistance2d(me->GetHomePosition().GetPositionX(), me->GetHomePosition().GetPositionY()) <= 1.0f))
@@ -535,10 +531,11 @@ public:
             if (!UpdateVictim())
                 return;
 
-            if (tEnrage <= diff)
+            if (tEnrage <= diff && willCastEnrage)
             {
                 if (me->GetHealthPct() <= 30)
                 {
+					me->MonsterTextEmote(-106, 0);
                     DoCast(me, SPELL_ENRAGE);
                     tEnrage = CD_ENRAGE;
                 }
@@ -576,6 +573,64 @@ public:
 
 };
 
+class npc_rampaging_worgen2 : public CreatureScript
+{
+public:
+    npc_rampaging_worgen2() : CreatureScript("npc_rampaging_worgen2") { }
+
+    CreatureAI* GetAI(Creature* pCreature) const
+    {
+        return new npc_rampaging_worgen2AI (pCreature);
+    }
+
+    struct npc_rampaging_worgen2AI : public ScriptedAI
+    {
+        npc_rampaging_worgen2AI(Creature *c) : ScriptedAI(c) {}
+
+		uint16 tRun, tEnrage;
+        bool onceRun, willCastEnrage;
+        float x, y, z;
+
+        void JustRespawned()
+        {
+			tEnrage = 0;
+            tRun = 500;
+            onceRun = true;
+            x = me->m_positionX+cos(me->m_orientation)*8;
+            y = me->m_positionY+sin(me->m_orientation)*8;
+            z = me->m_positionZ;
+			willCastEnrage = urand(0, 1);
+        }
+
+        void UpdateAI(const uint32 diff)
+        {
+			if (tRun <= diff && onceRun)
+            {
+				me->GetMotionMaster()->MoveCharge(x, y, z, 8);
+				onceRun = false;
+            }
+            else tRun -= diff;
+
+            if (!UpdateVictim())
+                return;
+
+            if (tEnrage <= diff)
+            {
+                if (me->GetHealthPct() <= 30 && willCastEnrage)
+                {
+					me->MonsterTextEmote(-106, 0);
+                    DoCast(me, SPELL_ENRAGE);
+                    tEnrage = CD_ENRAGE;
+                }
+            }
+            else tEnrage -= diff;
+
+			DoMeleeAttackIfReady();
+		}
+    };
+
+};
+
 /*######
 ## go_merchant_square_door
 ######*/
@@ -591,34 +646,41 @@ class go_merchant_square_door : public GameObjectScript
 public:
     go_merchant_square_door() : GameObjectScript("go_merchant_square_door") { }
 
-    uint32 creatureID;
-    float x, y, z, angle;
+    float x, y, z, wx, wy, angle, tQuestCredit;
+	bool opened;
+	uint8 spawnKind;
+	Player* aPlayer;
+	GameObject* pGO;
 
     bool OnGossipHello(Player *pPlayer, GameObject *pGO)
     {
 		if (pPlayer->GetQuestStatus(QUEST_EVAC_MERC_SQUA) == QUEST_STATUS_INCOMPLETE)
 		{
+			aPlayer = pPlayer;
+			opened = 1;
+			tQuestCredit = 2000;
 			pGO->Use(pPlayer);
-
-        creatureID = RAND(NPC_RAMPAGING_WORGEN_2, NPC_FRIGHTENED_CITIZEN_1, NPC_FRIGHTENED_CITIZEN_2); //Random creature
-
+			spawnKind = urand(1, 3); //1,2=citizen, 3=citizen&worgen (66%,33%)
 			angle=pGO->GetOrientation();
 			x=pGO->GetPositionX()-cos(angle)*2;
 			y=pGO->GetPositionY()-sin(angle)*2;
 			z=pGO->GetPositionZ();
-			if (Creature *spawnedCreature = pGO->SummonCreature(creatureID,x,y,z,angle,TEMPSUMMON_TIMED_DESPAWN,SUMMON1_TTL))
+			wx = x-cos(angle)*2;
+			wy = y-sin(angle)*2;
+			
+			if (spawnKind < 3)
 			{
-				spawnedCreature->SetPhaseMask(2, 1);
-				if (creatureID == NPC_RAMPAGING_WORGEN_2)
+				if (Creature *spawnedCreature = pGO->SummonCreature(NPC_FRIGHTENED_CITIZEN_1,x,y,z,angle,TEMPSUMMON_TIMED_DESPAWN,SUMMON1_TTL))
 				{
-					spawnedCreature->getThreatManager().resetAllAggro();
-					pPlayer->AddThreat(spawnedCreature, 100000.0f);
-					spawnedCreature->AddThreat(pPlayer, 100000.0f);
-					spawnedCreature->AI()->AttackStart(pPlayer);
+					spawnedCreature->SetPhaseMask(6, 1);
+					spawnedCreature->Respawn(1);
 				}
-				else 
+			}
+			else
+			{
+				if (Creature *spawnedCreature = pGO->SummonCreature(NPC_FRIGHTENED_CITIZEN_2,x,y,z,angle,TEMPSUMMON_TIMED_DESPAWN,SUMMON1_TTL))
 				{
-					pPlayer->KilledMonsterCredit(35830, 0);
+					spawnedCreature->SetPhaseMask(6, 1);
 					spawnedCreature->Respawn(1);
 				}
 			}
@@ -626,6 +688,30 @@ public:
 		}    
         return false;
     }
+	
+	void OnUpdate(GameObject *pGO, uint32 diff)
+	{
+		if (opened == 1)
+		{
+			if (tQuestCredit <= ((float)diff/8))
+			{
+				opened = 0;
+				aPlayer->KilledMonsterCredit(35830, 0);
+				if (spawnKind == 3)
+				{
+					if (Creature *spawnedCreature = pGO->SummonCreature(NPC_RAMPAGING_WORGEN_2,wx,wy,z,angle,TEMPSUMMON_TIMED_DESPAWN,SUMMON1_TTL))
+					{
+						spawnedCreature->SetPhaseMask(6, 1);
+						spawnedCreature->Respawn(1);
+						spawnedCreature->getThreatManager().resetAllAggro();
+						aPlayer->AddThreat(spawnedCreature, 1.0f);
+						spawnedCreature->AddThreat(aPlayer, 1.0f);
+					}
+				}
+			}
+			else tQuestCredit -= ((float)diff/8);
+		}
+	}
 };
 
 /*######
@@ -635,8 +721,7 @@ public:
 enum eFrightened_citizen
 {
     //Timers
-    DELAY_RUN = 3000,
-    DESPAWN_CITIZEN = 5000,
+    DESPAWN_CITIZEN = 4500,
     
     //Say
     SAY_CITIZEN_1 = -1638003,
@@ -646,6 +731,12 @@ enum eFrightened_citizen
     SAY_CITIZEN_5 = -1638007,
     SAY_CITIZEN_6 = -1638008,
     SAY_CITIZEN_7 = -1638009,
+	SAY_CITIZEN_8 = -1638010,
+	SAY_CITIZEN_1b = -1638011,
+	SAY_CITIZEN_2b = -1638012,
+	SAY_CITIZEN_3b = -1638013,
+	SAY_CITIZEN_4b = -1638014,
+	SAY_CITIZEN_5b = -1638015,
 };
 
 class npc_frightened_citizen : public CreatureScript
@@ -662,46 +753,54 @@ public:
     {
         npc_frightened_citizenAI(Creature *c) : ScriptedAI(c) {}
 
-        int16 delay, despawn;
-        bool run, onceTimer;
-        char* text;
-        float x, y, z;
+        uint16 tRun, tRun2, tDespawn, tSay;
+        bool onceRun, onceRun2, onceSay;
+        float x, y, z, x2, y2;
 
         void JustRespawned()
         {
-            delay = DELAY_RUN;
-            run = false;
-            despawn = DESPAWN_CITIZEN;
-            onceTimer = true;
-            x = me->m_positionX+cos(me->m_orientation)*16;
-            y = me->m_positionY+sin(me->m_orientation)*16;
+            tRun = 500;
+			tRun2 = 2500;
+			tSay = 1500;
+			tDespawn = DESPAWN_CITIZEN;
+            onceRun = onceRun2 = onceSay = true;
+            x = me->m_positionX+cos(me->m_orientation)*6;
+            y = me->m_positionY+sin(me->m_orientation)*6;
             z = me->m_positionZ;
-            
-            DoScriptText(RAND(SAY_CITIZEN_1, SAY_CITIZEN_2, SAY_CITIZEN_3, SAY_CITIZEN_4, SAY_CITIZEN_5, SAY_CITIZEN_6, SAY_CITIZEN_7), me); //Say from random 1-7
+			x2 = x+cos(me->m_orientation+1.5707)*16;
+            y2 = y+sin(me->m_orientation+1.5707)*16;
         }
 
         void UpdateAI(const uint32 diff)
         {
-            if (delay <= 0 && onceTimer == true)
+            if (tRun <= diff && onceRun)
             {
-                run = true;
-                onceTimer = false;
+				me->GetMotionMaster()->MoveCharge(x, y, z, 8);
+				onceRun = false;
             }
-            else delay -= diff;
+            else tRun -= diff;
 
-            if (run == true)
+			if (tSay <= diff && onceSay)
             {
-                run = false;
-                me->GetMotionMaster()->MoveCharge(x, y, z, 8);
+				sLog->outBasic("CreatureType: %u, entry: %u", me->GetCreatureType(), me->GetEntry());//tmp
+				if (me->GetEntry() == NPC_FRIGHTENED_CITIZEN_1)
+					DoScriptText(RAND(SAY_CITIZEN_1, SAY_CITIZEN_2, SAY_CITIZEN_3, SAY_CITIZEN_4, SAY_CITIZEN_5, SAY_CITIZEN_6, SAY_CITIZEN_7, SAY_CITIZEN_8), me);
+				else
+					DoScriptText(RAND(SAY_CITIZEN_1b, SAY_CITIZEN_2b, SAY_CITIZEN_3b, SAY_CITIZEN_4b, SAY_CITIZEN_5b), me);
+				onceSay = false;
             }
+            else tSay -= diff;
 
-            if (despawn <= 0)
+			if (tRun2 <= diff && onceRun2)
             {
-                me->DespawnOrUnsummon();
+				me->GetMotionMaster()->MoveCharge(x2, y2, z, 8);
+				onceRun = false;
             }
-            else despawn -= diff;
+            else tRun2 -= diff;
 
-        }
+			if (tDespawn <= diff) me->DespawnOrUnsummon();
+            else tDespawn -= diff;
+		}
     };
 
 };
@@ -712,6 +811,7 @@ void AddSC_gilneas()
     new npc_prince_liam_greymane_phase1();
     new npc_prince_liam_greymane_phase2();
     new npc_rampaging_worgen();
+	new npc_rampaging_worgen2();
     new go_merchant_square_door();
     new npc_frightened_citizen();
     new npc_lieutenant_walden();
