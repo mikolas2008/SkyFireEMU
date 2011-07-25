@@ -335,12 +335,12 @@ public:
 
     CreatureAI* GetAI(Creature* pCreature) const
     {
-        return new npc_gilneas_city_guardAI (pCreature);
+        return new npc_gilneas_city_guard_phase2AI (pCreature);
     }
 
-    struct npc_gilneas_city_guardAI : public ScriptedAI
+    struct npc_gilneas_city_guard_phase2AI : public ScriptedAI
     {
-        npc_gilneas_city_guardAI(Creature *c) : ScriptedAI(c) {}
+        npc_gilneas_city_guard_phase2AI(Creature *c) : ScriptedAI(c) {}
 
         uint32 tAnimate;
         uint32 tSound;
@@ -795,13 +795,13 @@ enum eFrightened_citizen
 	SAY_CITIZEN_5b = -1638015,
 };
 
-struct point
+struct Point
 {
 	float x, y;
 };
 
-point a[6] = {{-1537.26f, 1425.83f}, {-1550.26f, 1423.25f}, {-1552.31f, 1393.49f}, {-1557.81f, 1364.3f}, {-1559.74f, 1321.89f}, {-1578.59f, 1317.46f}};
-point b[10] = {{-1463.98f, 1427.69f}, {-1437.21f, 1423.68f}, {-1420.65f, 1420.79f}, {-1405.11f, 1416.85f}, {-1402.88f, 1403.74f}, {-1406.78f, 1374.38f}, {-1502.84f, 1341.09f}, {-1531.17f, 1331.84f}, {-1566.86f, 1320.21f}, {-1578.69f, 1317.54f}};
+Point a[] = {{-1537.26f, 1425.83f}, {-1550.26f, 1423.25f}, {-1552.31f, 1393.49f}, {-1557.81f, 1364.3f}, {-1559.74f, 1321.89f}, {-1578.59f, 1317.46f}};
+Point b[] = {{-1463.98f, 1427.69f}, {-1437.21f, 1423.68f}, {-1420.65f, 1420.79f}, {-1405.11f, 1416.85f}, {-1402.88f, 1403.74f}, {-1406.78f, 1374.38f}, {-1502.84f, 1341.09f}, {-1531.17f, 1331.84f}, {-1566.86f, 1320.21f}, {-1578.69f, 1317.54f}};
 
 class npc_frightened_citizen : public CreatureScript
 {
@@ -820,7 +820,44 @@ public:
 		uint8 pointNumberA, pointNumberB;
         uint16 tRun, tRun2, tRun3, tSay;
         bool onceRun, onceRun2, onceRun3, onceSay, way;
-        float x, y, z, x2, y2, distA[6], distB[10], minDistA, minDistB;
+        float x, y, z, x2, y2, distA, distB;
+
+		void MultiDistanceMeter(Point *p, uint8 numberOfPoints, float *dist)
+		{
+			for (uint8 i = 0; i <= (numberOfPoints-1); i++)
+			{
+				dist[i] = me->GetDistance2d(p[i].x, p[i].y);
+			}
+		}
+
+		uint8 NearestPoint(Point *p, uint8 numberOfPoints, float *nearestDist)
+		{
+			float dist[16];
+			uint8 pointNumber;
+			MultiDistanceMeter(p, numberOfPoints, dist);
+			for (uint8 i = 0; i <= numberOfPoints-1; i++)
+			{
+				if (i == 0)
+				{
+					*nearestDist = dist[i];
+					pointNumber = i;
+				}
+				else if (*nearestDist > dist[i])
+				{
+					*nearestDist = dist[i];
+					pointNumber = i;
+				}
+			}
+			return pointNumber;
+		}
+
+		bool GetWay(Point *a, uint8 numberOfPointsA, Point *b, uint8 numberOfPointsB)
+		{
+			NearestPoint(a, numberOfPointsA, &distA);
+			NearestPoint(b, numberOfPointsB, &distB);
+			if (distA < distB) return true;
+			else return false;
+		}
 		
         void JustRespawned()
         {
@@ -864,61 +901,21 @@ public:
 
 			if (tRun3 <= diff && onceRun3)//TO DO: optimize //Kupker
             {
-				for (uint8 i = 0; i <= 5; i++)
-				{
-					distA[i] = me->GetDistance2d(a[i].x, a[i].y);
-				}
-				
-				for (uint8 i = 0; i <= 5; i++)
-				{
-					if (i == 0)
-					{
-						minDistA = distA[i];
-						pointNumberA = i;
-					}
-					else if (minDistA > distA[i])
-					{
-						minDistA = distA[i];
-						pointNumberA = i;
-					}
-				}
-
-				for (uint8 i = 0; i <= 9; i++)
-				{
-					distB[i] = me->GetDistance2d(b[i].x, b[i].y);
-				}
-
-				for (uint8 i = 0; i <= 9; i++)
-				{
-					if (i == 0)
-					{
-						minDistB = distB[i];
-						pointNumberB = i;
-					}
-					else if (minDistB > distB[i])
-					{
-						minDistB = distB[i];
-						pointNumberB = i;
-					}
-				}
-
-				if (minDistA < minDistB) way = true;
-				else way = false;
-				/*
-				if (way == true) me->GetMotionMaster()->MoveCharge(a[pointNumberA].x, a[pointNumberA].y, z, 8);
-				else me->GetMotionMaster()->MoveCharge(b[pointNumberB].x, b[pointNumberB].y, z, 8);*/
-				//sLog->outBasic("minDistA: %f, minDistB: %f, way: %s, pointNumberA: %u, pointNumberB: %u, a.x: %f, a.y: %f, b.x: %f, b.y: %f, onceRun3: %s", minDistA, minDistB, (way)?"true":"false", pointNumberA, pointNumberB, a[pointNumberA].x, a[pointNumberA].y, b[pointNumberB].x, b[pointNumberB].y, (onceRun3)?"true":"false");
+				pointNumberA = NearestPoint(a, 6, &distA);
+				pointNumberB = NearestPoint(b, 10, &distB);
+				way = GetWay(a, 6, b, 10);
+				if (way) (me->GetMotionMaster()->MoveCharge(a[pointNumberA].x, a[pointNumberA].y, z, 8));
+				else (me->GetMotionMaster()->MoveCharge(b[pointNumberB].x, b[pointNumberB].y, z, 8));
 				onceRun3 = false;
 			}
 			else tRun3 -= diff;
-
+			
 			if (!onceRun3)
 			{
-				if (way == true)
+				if (way)
 				{
 					if (pointNumberA <= 5 && (me->GetDistance2d(a[pointNumberA].x, a[pointNumberA].y) >= 1))
 					{
-						
 						me->GetMotionMaster()->MoveCharge(a[pointNumberA].x, a[pointNumberA].y, z, 8);
 					}
 					else pointNumberA ++;
@@ -928,7 +925,6 @@ public:
 				{
 					if (pointNumberB <= 9 && (me->GetDistance2d(b[pointNumberB].x, b[pointNumberB].y) >= 1))
 					{
-						
 						me->GetMotionMaster()->MoveCharge(b[pointNumberB].x, b[pointNumberB].y, z, 8);
 					}
 					else pointNumberB ++;
