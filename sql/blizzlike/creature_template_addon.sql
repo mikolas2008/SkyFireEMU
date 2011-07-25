@@ -9,7 +9,7 @@ REPLACE INTO `creature_template_addon` VALUES (34913, 0, 2410, 0, 0, 0, NULL); -
 REPLACE INTO `creature_template_addon` VALUES (34850, 0, 2410, 0, 0, 0, NULL); -- mounted
 
 -- Lieutenant Walden 34863
-INSERT INTO `creature_template_addon` VALUES (34863, 0, 0, 7, 0, 65, NULL); -- appear dead
+REPLACE INTO `creature_template_addon` VALUES (34863, 0, 0, 7, 0, 65, NULL); -- appear dead
 
 -- Slain Guards
-INSERT INTO `creature_template_addon` VALUES (39095, 0, 0, 7, 0, 65, NULL); -- appear dead
+REPLACE INTO `creature_template_addon` VALUES (39095, 0, 0, 7, 0, 65, NULL); -- appear dead
