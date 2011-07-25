@@ -697,7 +697,7 @@ public:
 
 enum eMerchant_square_door
 {
-    #define SUMMON1_TTL 30000
+    #define SUMMON1_TTL 300000
     #define QUEST_EVAC_MERC_SQUA 14098
 };
 
@@ -780,10 +780,6 @@ public:
 
 enum eFrightened_citizen
 {
-    //Timers
-    DESPAWN_CITIZEN = 4500,
-    
-    //Say
     SAY_CITIZEN_1 = -1638003,
     SAY_CITIZEN_2 = -1638004,
     SAY_CITIZEN_3 = -1638005,
@@ -799,6 +795,14 @@ enum eFrightened_citizen
 	SAY_CITIZEN_5b = -1638015,
 };
 
+struct point
+{
+	float x, y;
+};
+
+point a[6] = {{-1537.26f, 1425.83f}, {-1550.26f, 1423.25f}, {-1552.31f, 1393.49f}, {-1557.81f, 1364.3f}, {-1559.74f, 1321.89f}, {-1578.59f, 1317.46f}};
+point b[10] = {{-1463.98f, 1427.69f}, {-1437.21f, 1423.68f}, {-1420.65f, 1420.79f}, {-1405.11f, 1416.85f}, {-1402.88f, 1403.74f}, {-1406.78f, 1374.38f}, {-1502.84f, 1341.09f}, {-1531.17f, 1331.84f}, {-1566.86f, 1320.21f}, {-1578.69f, 1317.54f}};
+
 class npc_frightened_citizen : public CreatureScript
 {
 public:
@@ -813,22 +817,23 @@ public:
     {
         npc_frightened_citizenAI(Creature *c) : ScriptedAI(c) {}
 
-        uint16 tRun, tRun2, tDespawn, tSay;
-        bool onceRun, onceRun2, onceSay;
-        float x, y, z, x2, y2;
-
+		uint8 pointNumberA, pointNumberB;
+        uint16 tRun, tRun2, tRun3, tSay;
+        bool onceRun, onceRun2, onceRun3, onceSay, way;
+        float x, y, z, x2, y2, distA[6], distB[10], minDistA, minDistB;
+		
         void JustRespawned()
         {
             tRun = 500;
 			tRun2 = 2500;
+			tRun3 = 3000;
 			tSay = 1500;
-			tDespawn = DESPAWN_CITIZEN;
-            onceRun = onceRun2 = onceSay = true;
-            x = me->m_positionX+cos(me->m_orientation)*6;
-            y = me->m_positionY+sin(me->m_orientation)*6;
+            onceRun = onceRun2 = onceSay = onceRun3 = true;
+            x = me->m_positionX+cos(me->m_orientation)*5;
+            y = me->m_positionY+sin(me->m_orientation)*5;
             z = me->m_positionZ;
-			x2 = x+cos(me->m_orientation+1.5707)*16;
-            y2 = y+sin(me->m_orientation+1.5707)*16;
+			x2 = x+cos(me->m_orientation)*5;
+            y2 = y+sin(me->m_orientation)*5;
         }
 
         void UpdateAI(const uint32 diff)
@@ -842,7 +847,6 @@ public:
 
 			if (tSay <= diff && onceSay)
             {
-				sLog->outBasic("CreatureType: %u, entry: %u", me->GetCreatureType(), me->GetEntry());//tmp
 				if (me->GetEntry() == NPC_FRIGHTENED_CITIZEN_1)
 					DoScriptText(RAND(SAY_CITIZEN_1, SAY_CITIZEN_2, SAY_CITIZEN_3, SAY_CITIZEN_4, SAY_CITIZEN_5, SAY_CITIZEN_6, SAY_CITIZEN_7, SAY_CITIZEN_8), me);
 				else
@@ -854,16 +858,88 @@ public:
 			if (tRun2 <= diff && onceRun2)
             {
 				me->GetMotionMaster()->MoveCharge(x2, y2, z, 8);
-				onceRun = false;
+				onceRun2 = false;
             }
             else tRun2 -= diff;
 
-			if (tDespawn <= diff) me->DespawnOrUnsummon();
-            else tDespawn -= diff;
+			if (tRun3 <= diff && onceRun3)//TO DO: optimize //Kupker
+            {
+				for (uint8 i = 0; i <= 5; i++)
+				{
+					distA[i] = me->GetDistance2d(a[i].x, a[i].y);
+				}
+				
+				for (uint8 i = 0; i <= 5; i++)
+				{
+					if (i == 0)
+					{
+						minDistA = distA[i];
+						pointNumberA = i;
+					}
+					else if (minDistA > distA[i])
+					{
+						minDistA = distA[i];
+						pointNumberA = i;
+					}
+				}
+
+				for (uint8 i = 0; i <= 9; i++)
+				{
+					distB[i] = me->GetDistance2d(b[i].x, b[i].y);
+				}
+
+				for (uint8 i = 0; i <= 9; i++)
+				{
+					if (i == 0)
+					{
+						minDistB = distB[i];
+						pointNumberB = i;
+					}
+					else if (minDistB > distB[i])
+					{
+						minDistB = distB[i];
+						pointNumberB = i;
+					}
+				}
+
+				if (minDistA < minDistB) way = true;
+				else way = false;
+				/*
+				if (way == true) me->GetMotionMaster()->MoveCharge(a[pointNumberA].x, a[pointNumberA].y, z, 8);
+				else me->GetMotionMaster()->MoveCharge(b[pointNumberB].x, b[pointNumberB].y, z, 8);*/
+				//sLog->outBasic("minDistA: %f, minDistB: %f, way: %s, pointNumberA: %u, pointNumberB: %u, a.x: %f, a.y: %f, b.x: %f, b.y: %f, onceRun3: %s", minDistA, minDistB, (way)?"true":"false", pointNumberA, pointNumberB, a[pointNumberA].x, a[pointNumberA].y, b[pointNumberB].x, b[pointNumberB].y, (onceRun3)?"true":"false");
+				onceRun3 = false;
+			}
+			else tRun3 -= diff;
+
+			if (!onceRun3)
+			{
+				if (way == true)
+				{
+					if (pointNumberA <= 5 && (me->GetDistance2d(a[pointNumberA].x, a[pointNumberA].y) >= 1))
+					{
+						
+						me->GetMotionMaster()->MoveCharge(a[pointNumberA].x, a[pointNumberA].y, z, 8);
+					}
+					else pointNumberA ++;
+					if (pointNumberA >= 6) me->DespawnOrUnsummon();
+				}
+				else
+				{
+					if (pointNumberB <= 9 && (me->GetDistance2d(b[pointNumberB].x, b[pointNumberB].y) >= 1))
+					{
+						
+						me->GetMotionMaster()->MoveCharge(b[pointNumberB].x, b[pointNumberB].y, z, 8);
+					}
+					else pointNumberB ++;
+					if (pointNumberB >= 10) me->DespawnOrUnsummon();
+				}
+			}
 		}
     };
-
 };
+
+
 
 void AddSC_gilneas()
 {
