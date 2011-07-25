@@ -739,22 +739,6 @@ uint32 Unit::DealDamage(Unit *pVictim, uint32 damage, CleanDamage const* cleanDa
         if (pVictim->GetTypeId() == TYPEID_PLAYER)
             pVictim->ToPlayer()->UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_TOTAL_DAMAGE_RECEIVED, damage);
 
-        // Blood Craze
-        if (pVictim->GetTypeId() == TYPEID_PLAYER)
-        {
-            if (pVictim->HasAura(16487)) // Rank 1
-                if (roll_chance_f(10.0f))
-                    pVictim->CastSpell(pVictim, 16488, true);
-
-            if (pVictim->HasAura(16489)) // Rank 2
-                if (roll_chance_f(10.0f))
-                    pVictim->CastSpell(pVictim, 16490, true);
-
-            if (pVictim->HasAura(16492)) // Rank 3
-                if (roll_chance_f(10.0f))
-                    pVictim->CastSpell(pVictim, 16491, true);
-        }
-
         // Brain Freeze
         if (GetTypeId() == TYPEID_PLAYER)
         {
@@ -17115,9 +17099,10 @@ void Unit::BuildMovementPacket(ByteBuffer *data) const
             break;
     }
 
-    if (GetVehicle())
-        if (!this->HasUnitMovementFlag(MOVEMENTFLAG_ROOT))
-            sLog->outError("Unit does not have MOVEMENTFLAG_ROOT but is in vehicle!");
+    if (Vehicle* pVehicle = GetVehicle())
+        if (!HasUnitMovementFlag(MOVEMENTFLAG_ROOT))
+            sLog->outError("Unit (GUID: " UI64FMTD ", entry: %u) does not have MOVEMENTFLAG_ROOT but is in vehicle (ID: %u)!",
+                GetGUID(), GetEntry(), pVehicle->GetVehicleInfo()->m_ID);
 
     *data << uint32(GetUnitMovementFlags()); // movement flags
     *data << uint16(m_movementInfo.flags2); // 2.3.0
