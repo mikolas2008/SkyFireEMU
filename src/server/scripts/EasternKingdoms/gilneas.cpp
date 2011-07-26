@@ -764,7 +764,7 @@ public:
 		{
 			aPlayer = pPlayer;
 			opened = 1;
-			tQuestCredit = 2000;
+			tQuestCredit = 2500;
 			pGO->Use(pPlayer);
 			spawnKind = urand(1, 3); //1,2=citizen, 3=citizen&worgen (66%,33%)
 			angle=pGO->GetOrientation();
@@ -839,6 +839,7 @@ enum eFrightened_citizen
 	SAY_CITIZEN_3b = -1638013,
 	SAY_CITIZEN_4b = -1638014,
 	SAY_CITIZEN_5b = -1638015,
+	#define PATHS_COUNT 2
 };
 
 struct Point
@@ -846,8 +847,16 @@ struct Point
 	float x, y;
 };
 
-Point a[] = {{-1537.26f, 1425.83f}, {-1550.26f, 1423.25f}, {-1552.31f, 1393.49f}, {-1557.81f, 1364.3f}, {-1559.74f, 1321.89f}, {-1578.59f, 1317.46f}};
-Point b[] = {{-1463.98f, 1427.69f}, {-1437.21f, 1423.68f}, {-1420.65f, 1420.79f}, {-1405.11f, 1416.85f}, {-1402.88f, 1403.74f}, {-1406.78f, 1374.38f}, {-1502.84f, 1341.09f}, {-1531.17f, 1331.84f}, {-1566.86f, 1320.21f}, {-1578.69f, 1317.54f}};
+struct WayPoint
+{
+	int pathID, pointID;
+};
+
+struct Paths
+{
+	uint8 pointsCount[8];//pathID, pointsCount
+	Point paths[8][10];//pathID, pointID, Point
+};
 
 class npc_frightened_citizen : public CreatureScript
 {
@@ -863,55 +872,83 @@ public:
 	{
 		npc_frightened_citizenAI(Creature *c) : ScriptedAI(c) {}
 
-		uint8 pointNumberA, pointNumberB;
-		uint16 tRun, tRun2, tRun3, tSay;
-		bool onceRun, onceRun2, onceRun3, onceSay, way;
-		float x, y, z, x2, y2, distA, distB;
+		uint16 tRun, tRun2, tSay;
+		bool onceRun, onceRun2, onceGet, onceSay;
+		float x, y, z, x2, y2;
+		WayPoint nearestPoint;
+		Paths paths;
 
-		void MultiDistanceMeter(Point *p, uint8 numberOfPoints, float *dist)
+		void MultiDistanceMeter(Point *p, uint8 pointsCount, float *dist)
 		{
-			for (uint8 i = 0; i <= (numberOfPoints-1); i++)
+			for (uint8 i = 0; i <= (pointsCount-1); i++)
 			{
 				dist[i] = me->GetDistance2d(p[i].x, p[i].y);
 			}
 		}
 
-		uint8 NearestPoint(Point *p, uint8 numberOfPoints, float *nearestDist)
+		WayPoint GetNearestPoint(Paths paths)
 		{
-			float dist[16];
-			uint8 pointNumber;
-			MultiDistanceMeter(p, numberOfPoints, dist);
-			for (uint8 i = 0; i <= numberOfPoints-1; i++)
+			WayPoint nearestPoint;
+			float dist[PATHS_COUNT][10], lowestDists[PATHS_COUNT];
+			uint8 nearestPointsID[PATHS_COUNT], lowestDist;
+			for (uint8 i = 0; i <= PATHS_COUNT-1; i++)
 			{
-				if (i == 0)
+				MultiDistanceMeter(paths.paths[i], paths.pointsCount[i], dist[i]);
+				for (uint8 j = 0; j <= paths.pointsCount[i]-1; j++)
 				{
-					*nearestDist = dist[i];
-					pointNumber = i;
-				}
-				else if (*nearestDist > dist[i])
-				{
-					*nearestDist = dist[i];
-					pointNumber = i;
+					if (j == 0)
+					{
+						lowestDists[i] = dist[i][j];
+						nearestPointsID[i] = j;
+					}
+					else if (lowestDists[i] > dist[i][j])
+					{
+						lowestDists[i] = dist[i][j];
+						nearestPointsID[i] = j;
+					}
 				}
 			}
-			return pointNumber;
-		}
-
-		bool GetWay(Point *a, uint8 numberOfPointsA, Point *b, uint8 numberOfPointsB)
-		{
-			NearestPoint(a, numberOfPointsA, &distA);
-			NearestPoint(b, numberOfPointsB, &distB);
-			if (distA < distB) return true;
-			else return false;
+			for (uint8 i = 0; i <= PATHS_COUNT-1; i++)
+			{
+				if (i == 0)
+					{
+						lowestDist = lowestDists[i];
+						nearestPoint.pointID = nearestPointsID[i];
+						nearestPoint.pathID = i;
+					}
+					else if (lowestDist > lowestDists[i])
+					{
+						lowestDist = lowestDists[i];
+						nearestPoint.pointID = nearestPointsID[i];
+						nearestPoint.pathID = i;
+					}
+			}
+			return nearestPoint;
 		}
 		
 		void JustRespawned()
 		{
+			QueryResult result[PATHS_COUNT];
+			result[0] = WorldDatabase.Query("SELECT `id`, `point`, `position_x`, `position_y` FROM waypoint_data WHERE id = 349810 ORDER BY `point`");
+			result[1] = WorldDatabase.Query("SELECT `id`, `point`, `position_x`, `position_y` FROM waypoint_data WHERE id = 349811 ORDER BY `point`");
+			if (result[0]) paths.pointsCount[0] = result[0]->GetRowCount();
+			if (result[1]) paths.pointsCount[1] = result[1]->GetRowCount();		
+			
+			for (uint8 i = 0; i <= PATHS_COUNT-1; i ++)
+			{
+				for (uint8 j = 0; j <= paths.pointsCount[i]-1; j ++)
+				{
+					Field* pFields = result[i]->Fetch();
+					paths.paths[i][j].x = pFields[2].GetFloat();
+					paths.paths[i][j].y = pFields[3].GetFloat();
+					result[i]->NextRow();
+				}
+			}
+
 			tRun = 500;
 			tRun2 = 2500;
-			tRun3 = 3000;
-			tSay = 1500;
-			onceRun = onceRun2 = onceSay = onceRun3 = true;
+			tSay = 1000;
+			onceRun = onceRun2 = onceSay = onceGet = true;
 			x = me->m_positionX+cos(me->m_orientation)*5;
 			y = me->m_positionY+sin(me->m_orientation)*5;
 			z = me->m_positionZ;
@@ -937,46 +974,24 @@ public:
 				onceSay = false;
 			}
 			else tSay -= diff;
-
-			if (tRun2 <= diff && onceRun2)
-			{
-				me->GetMotionMaster()->MoveCharge(x2, y2, z, 8);
-				onceRun2 = false;
-			}
-			else tRun2 -= diff;
-
-			if (tRun3 <= diff && onceRun3)//TO DO: optimize //Kupker
-			{
-				pointNumberA = NearestPoint(a, 6, &distA);
-				pointNumberB = NearestPoint(b, 10, &distB);
-				way = GetWay(a, 6, b, 10);
-				if (way) (me->GetMotionMaster()->MoveCharge(a[pointNumberA].x, a[pointNumberA].y, z, 8));
-				else (me->GetMotionMaster()->MoveCharge(b[pointNumberB].x, b[pointNumberB].y, z, 8));
-				onceRun3 = false;
-			}
-			else tRun3 -= diff;
 			
-			if (!onceRun3)
+			if (tRun2 <= diff)
 			{
-				if (way)
+				if (onceGet)
 				{
-					if (pointNumberA <= 5 && (me->GetDistance2d(a[pointNumberA].x, a[pointNumberA].y) >= 1))
-					{
-						me->GetMotionMaster()->MoveCharge(a[pointNumberA].x, a[pointNumberA].y, z, 8);
-					}
-					else pointNumberA ++;
-					if (pointNumberA >= 6) me->DespawnOrUnsummon();
+					nearestPoint = GetNearestPoint(paths);
+					onceGet = false;
 				}
 				else
 				{
-					if (pointNumberB <= 9 && (me->GetDistance2d(b[pointNumberB].x, b[pointNumberB].y) >= 1))
-					{
-						me->GetMotionMaster()->MoveCharge(b[pointNumberB].x, b[pointNumberB].y, z, 8);
-					}
-					else pointNumberB ++;
-					if (pointNumberB >= 10) me->DespawnOrUnsummon();
+					if (me->GetDistance2d(paths.paths[nearestPoint.pathID][nearestPoint.pointID].x, paths.paths[nearestPoint.pathID][nearestPoint.pointID].y) > 1)
+						me->GetMotionMaster()->MoveCharge(paths.paths[nearestPoint.pathID][nearestPoint.pointID].x, paths.paths[nearestPoint.pathID][nearestPoint.pointID].y, z, 8);
+					else
+						nearestPoint.pointID ++;
+					if (nearestPoint.pointID >= paths.pointsCount[nearestPoint.pathID]) me->DespawnOrUnsummon();
 				}
 			}
+			else tRun2 -= diff;
 		}
 	};
 };
