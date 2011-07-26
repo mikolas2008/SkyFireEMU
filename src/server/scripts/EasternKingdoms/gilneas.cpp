@@ -350,9 +350,7 @@ public:
 	{
 		npc_gilneas_city_guard_phase2AI(Creature *c) : ScriptedAI(c) {}
 
-		uint32 tAnimate;
-		uint32 tSound;
-		uint32 dmgCount;
+		uint32 tAnimate, tSound, dmgCount, tSeek;
 		bool playSnd;
 
 		void Reset()
@@ -361,6 +359,7 @@ public:
 			dmgCount = 0;
 			tSound = DELAY_SOUND;
 			playSnd = false;
+			tSeek = urand(1000, 2000);
 		}
 
 		void DamageTaken(Unit * pWho, uint32 &uiDamage)
@@ -390,9 +389,14 @@ public:
 
 		void UpdateAI(const uint32 diff)
 		{
-			if (me->isAlive() && !me->isInCombat() && (me->GetDistance2d(me->GetHomePosition().GetPositionX(), me->GetHomePosition().GetPositionY()) <= 1.0f))
-				if (Creature* enemy = me->FindNearestCreature(NPC_RAMPAGING_WORGEN_1, 16.0f, true))
-					me->AI()->AttackStart(enemy);
+			if (tSeek <= diff)
+			{
+				if ((me->isAlive()) && (!me->isInCombat() && (me->GetDistance2d(me->GetHomePosition().GetPositionX(), me->GetHomePosition().GetPositionY()) <= 1.0f)))
+					if (Creature* enemy = me->FindNearestCreature(NPC_RAMPAGING_WORGEN_1, 16.0f, true))
+						me->AI()->AttackStart(enemy);
+				tSeek = urand(1000, 2000); //optimize cpu load, seeking only sometime between 1 and 2 seconds
+			}
+			else tSeek -= diff;
 
 			if (!UpdateVictim())
 				return;
@@ -445,12 +449,8 @@ public:
 	{
 		npc_prince_liam_greymane_phase2AI(Creature *c) : ScriptedAI(c) {}
 
-		uint32 tAnimate;
-		uint32 tSound;
-		uint32 dmgCount;
-		uint32 tYell;
-		bool playSnd;
-		bool doYell;
+		uint32 tAnimate, tSound, dmgCount, tYell, tSeek;
+		bool playSnd, doYell;
 
 		void Reset()
 		{
@@ -458,7 +458,7 @@ public:
 			dmgCount = 0;
 			tSound = DELAY_SOUND;
 			playSnd = false;
-
+			tSeek = urand(1000, 2000);
 			doYell = true;
 			tYell = DELAY_YELL_PRINCE_LIAM_GREYMANE;
 		}
@@ -499,14 +499,15 @@ public:
 			//If creature has no target
 			if (!UpdateVictim())
 			{
-				//Find worgen nearby
-				if (me->isAlive() && !me->isInCombat() && (me->GetDistance2d(me->GetHomePosition().GetPositionX(), me->GetHomePosition().GetPositionY()) <= 1.0f))
+				if (tSeek <= diff)
 				{
-					if (Creature* enemy = me->FindNearestCreature(NPC_RAMPAGING_WORGEN_1, 16.0f, true))
-					{
-						me->AI()->AttackStart(enemy);
-					}
+					//Find worgen nearby
+					if (me->isAlive() && !me->isInCombat() && (me->GetDistance2d(me->GetHomePosition().GetPositionX(), me->GetHomePosition().GetPositionY()) <= 1.0f))
+						if (Creature* enemy = me->FindNearestCreature(NPC_RAMPAGING_WORGEN_1, 16.0f, true))
+							me->AI()->AttackStart(enemy);
+					tSeek = urand(1000, 2000);//optimize cpu load
 				}
+				else tSeek -= diff;
 
 				//Yell only once after Reset()
 				if(doYell)
@@ -874,9 +875,30 @@ public:
 
 		uint16 tRun, tRun2, tSay;
 		bool onceRun, onceRun2, onceGet, onceSay;
-		float x, y, z, x2, y2;
+		float x, y, z;
 		WayPoint nearestPoint;
 		Paths paths;
+		
+		Paths LoadPaths()
+		{
+			Paths paths;
+			QueryResult result[PATHS_COUNT];
+			result[0] = WorldDatabase.Query("SELECT `id`, `point`, `position_x`, `position_y` FROM waypoint_data WHERE id = 349810 ORDER BY `point`");
+			result[1] = WorldDatabase.Query("SELECT `id`, `point`, `position_x`, `position_y` FROM waypoint_data WHERE id = 349811 ORDER BY `point`");
+			if (result[0]) paths.pointsCount[0] = result[0]->GetRowCount();
+			if (result[1]) paths.pointsCount[1] = result[1]->GetRowCount();
+			for (uint8 i = 0; i <= PATHS_COUNT-1; i ++)
+			{
+				for (uint8 j = 0; j <= paths.pointsCount[i]-1; j ++)
+				{
+					Field* pFields = result[i]->Fetch();
+					paths.paths[i][j].x = pFields[2].GetFloat();
+					paths.paths[i][j].y = pFields[3].GetFloat();
+					result[i]->NextRow();
+				}
+			}
+			return paths;
+		}
 
 		void MultiDistanceMeter(Point *p, uint8 pointsCount, float *dist)
 		{
@@ -928,23 +950,7 @@ public:
 		
 		void JustRespawned()
 		{
-			QueryResult result[PATHS_COUNT];
-			result[0] = WorldDatabase.Query("SELECT `id`, `point`, `position_x`, `position_y` FROM waypoint_data WHERE id = 349810 ORDER BY `point`");
-			result[1] = WorldDatabase.Query("SELECT `id`, `point`, `position_x`, `position_y` FROM waypoint_data WHERE id = 349811 ORDER BY `point`");
-			if (result[0]) paths.pointsCount[0] = result[0]->GetRowCount();
-			if (result[1]) paths.pointsCount[1] = result[1]->GetRowCount();		
-			
-			for (uint8 i = 0; i <= PATHS_COUNT-1; i ++)
-			{
-				for (uint8 j = 0; j <= paths.pointsCount[i]-1; j ++)
-				{
-					Field* pFields = result[i]->Fetch();
-					paths.paths[i][j].x = pFields[2].GetFloat();
-					paths.paths[i][j].y = pFields[3].GetFloat();
-					result[i]->NextRow();
-				}
-			}
-
+			paths = LoadPaths();
 			tRun = 500;
 			tRun2 = 2500;
 			tSay = 1000;
@@ -952,8 +958,6 @@ public:
 			x = me->m_positionX+cos(me->m_orientation)*5;
 			y = me->m_positionY+sin(me->m_orientation)*5;
 			z = me->m_positionZ;
-			x2 = x+cos(me->m_orientation)*5;
-			y2 = y+sin(me->m_orientation)*5;
 		}
 
 		void UpdateAI(const uint32 diff)
