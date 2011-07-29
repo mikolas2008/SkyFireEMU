@@ -1,0 +1,1 @@
+REPLACE INTO `waypoint_scripts` VALUES (3485100, 0, 18, 0, 0, 0, 0, 0, 0, 0, 3485100);

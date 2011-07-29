@@ -5,7 +5,7 @@ REPLACE INTO `creature_template_addon` VALUES (44086, 0, 0, 0, 0, 431, NULL); --
 -- Prince Liam Greymane 34913 Phase 2+4(=6)
 REPLACE INTO `creature_template_addon` VALUES (34913, 0, 2410, 0, 0, 0, NULL); -- mounted
 
--- Prince Liam Greymane 34913 Phase 1
+-- Prince Liam Greymane 34850 Phase 1
 REPLACE INTO `creature_template_addon` VALUES (34850, 0, 2410, 0, 0, 0, NULL); -- mounted
 
 -- Lieutenant Walden 34863

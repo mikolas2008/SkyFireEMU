@@ -251,6 +251,120 @@ public:
 };
 
 /*######
+## npc_panicked_citizen_2
+######*/
+
+enum ePanicked_citizen_2
+{
+	#define PATHS_COUNT_PANICKED_CITIZEN 8
+};
+
+struct Waypoint
+{
+	uint32 pathID;
+	float x, y;
+};
+
+class npc_panicked_citizen_2 : public CreatureScript
+{
+public:
+	npc_panicked_citizen_2() : CreatureScript("npc_panicked_citizen_2") { }
+
+	CreatureAI* GetAI(Creature* pCreature) const
+	{
+		return new npc_panicked_citizen_2AI (pCreature);
+	}
+
+	struct npc_panicked_citizen_2AI : public ScriptedAI
+	{
+		npc_panicked_citizen_2AI(Creature *c) : ScriptedAI(c) {}
+
+		bool running, onceRun;
+		uint32 pathID, runDelay;
+		Waypoint firstWaypoints[PATHS_COUNT_PANICKED_CITIZEN];
+
+		void LoadWaypoints(Waypoint *waypoints)
+		{
+			QueryResult result[PATHS_COUNT_PANICKED_CITIZEN];
+			result[0] = WorldDatabase.Query("SELECT `id`, `position_x`, `position_y` FROM waypoint_data WHERE id = 34851000 and `point` = 1");
+			result[1] = WorldDatabase.Query("SELECT `id`, `position_x`, `position_y` FROM waypoint_data WHERE id = 34851001 and `point` = 1");
+			result[2] = WorldDatabase.Query("SELECT `id`, `position_x`, `position_y` FROM waypoint_data WHERE id = 34851002 and `point` = 1");
+			result[3] = WorldDatabase.Query("SELECT `id`, `position_x`, `position_y` FROM waypoint_data WHERE id = 34851003 and `point` = 1");
+			result[4] = WorldDatabase.Query("SELECT `id`, `position_x`, `position_y` FROM waypoint_data WHERE id = 34851004 and `point` = 1");
+			result[5] = WorldDatabase.Query("SELECT `id`, `position_x`, `position_y` FROM waypoint_data WHERE id = 34851005 and `point` = 1");
+			result[6] = WorldDatabase.Query("SELECT `id`, `position_x`, `position_y` FROM waypoint_data WHERE id = 34851006 and `point` = 1");
+			result[7] = WorldDatabase.Query("SELECT `id`, `position_x`, `position_y` FROM waypoint_data WHERE id = 34851007 and `point` = 1");
+
+			for (uint8 i = 0; i < PATHS_COUNT_PANICKED_CITIZEN; i ++)
+			{
+				Field* pFields = result[i]->Fetch();
+				waypoints[i].pathID = pFields[0].GetUInt32();
+				waypoints[i].x = pFields[1].GetFloat();
+				waypoints[i].y = pFields[2].GetFloat();
+			}
+		}
+
+		uint32 FindNearestPath(Waypoint *paths)
+		{
+			uint32 pathIDs[PATHS_COUNT_PANICKED_CITIZEN], nearestPathID;
+			float distances[PATHS_COUNT_PANICKED_CITIZEN], minDist;
+
+			for (uint8 i = 0; i < PATHS_COUNT_PANICKED_CITIZEN; i ++)
+			{
+				distances[i] = me->GetDistance2d(paths[i].x, paths[i].y);
+				pathIDs[i] = paths[i].pathID;
+			}
+			for (uint8 i = 0; i < PATHS_COUNT_PANICKED_CITIZEN; i ++)
+			{
+				if (i == 0)
+				{
+					minDist = distances[i];
+					nearestPathID = pathIDs[i];
+				}
+				else if (minDist > distances[i])
+				{
+					minDist = distances[i];
+					nearestPathID = pathIDs[i];
+				}
+			}
+			return nearestPathID;
+		}
+
+		void Reset()
+		{
+			me->Respawn(1);
+		}
+
+		void JustRespawned()
+		{
+			if (me->GetDefaultMovementType() == WAYPOINT_MOTION_TYPE) 
+			{
+				runDelay = urand(2000, 8000);
+				running = true;
+				onceRun = true;
+			}
+			else running = false;
+			
+		}
+
+		void UpdateAI(const uint32 diff)
+		{
+			if (running)
+			{
+				if (runDelay <= diff && onceRun)
+				{
+					LoadWaypoints(firstWaypoints);
+					pathID = FindNearestPath(firstWaypoints);
+					me->GetMotionMaster()->MovePath(pathID, false);
+					onceRun = false;
+				}
+				else runDelay -= diff;
+			}
+		}
+	};
+};
+
+/*######
 ## npc_lieutenant_walden
 ######*/
 
@@ -848,7 +962,7 @@ struct Point
 	float x, y;
 };
 
-struct WayPoint
+struct WayPointID
 {
 	int pathID, pointID;
 };
@@ -876,7 +990,7 @@ public:
 		uint16 tRun, tRun2, tSay;
 		bool onceRun, onceRun2, onceGet, onceSay;
 		float x, y, z;
-		WayPoint nearestPoint;
+		WayPointID nearestPointID;
 		Paths paths;
 		
 		Paths LoadPaths()
@@ -886,17 +1000,31 @@ public:
 			result[0] = WorldDatabase.Query("SELECT `id`, `point`, `position_x`, `position_y` FROM waypoint_data WHERE id = 349810 ORDER BY `point`");
 			result[1] = WorldDatabase.Query("SELECT `id`, `point`, `position_x`, `position_y` FROM waypoint_data WHERE id = 349811 ORDER BY `point`");
 			if (result[0]) paths.pointsCount[0] = result[0]->GetRowCount();
-			if (result[1]) paths.pointsCount[1] = result[1]->GetRowCount();
-			for (uint8 i = 0; i <= PATHS_COUNT-1; i ++)
+			else
 			{
-				for (uint8 j = 0; j <= paths.pointsCount[i]-1; j ++)
+				sLog->outError("waypoint_data for frightened citizen missing");
+				return paths;
+			}
+			if (result[1]) paths.pointsCount[1] = result[1]->GetRowCount();
+			else
+			{
+				sLog->outError("waypoint_data for frightened citizen missing");
+				return paths;
+			}
+			uint8 j;
+			for (uint8 i = 0; i < PATHS_COUNT; i ++)
+			{
+				j = 0;
+				do
 				{
 					Field* pFields = result[i]->Fetch();
 					paths.paths[i][j].x = pFields[2].GetFloat();
 					paths.paths[i][j].y = pFields[3].GetFloat();
-					result[i]->NextRow();
+					j++;
 				}
+				while (result[i]->NextRow());
 			}
+
 			return paths;
 		}
 
@@ -908,9 +1036,9 @@ public:
 			}
 		}
 
-		WayPoint GetNearestPoint(Paths paths)
+		WayPointID GetNearestPoint(Paths paths)
 		{
-			WayPoint nearestPoint;
+			WayPointID nearestPointID;
 			float dist[PATHS_COUNT][10], lowestDists[PATHS_COUNT];
 			uint8 nearestPointsID[PATHS_COUNT], lowestDist;
 			for (uint8 i = 0; i <= PATHS_COUNT-1; i++)
@@ -930,22 +1058,22 @@ public:
 					}
 				}
 			}
-			for (uint8 i = 0; i <= PATHS_COUNT-1; i++)
+			for (uint8 i = 0; i < PATHS_COUNT; i++)
 			{
 				if (i == 0)
 					{
 						lowestDist = lowestDists[i];
-						nearestPoint.pointID = nearestPointsID[i];
-						nearestPoint.pathID = i;
+						nearestPointID.pointID = nearestPointsID[i];
+						nearestPointID.pathID = i;
 					}
 					else if (lowestDist > lowestDists[i])
 					{
 						lowestDist = lowestDists[i];
-						nearestPoint.pointID = nearestPointsID[i];
-						nearestPoint.pathID = i;
+						nearestPointID.pointID = nearestPointsID[i];
+						nearestPointID.pathID = i;
 					}
 			}
-			return nearestPoint;
+			return nearestPointID;
 		}
 		
 		void JustRespawned()
@@ -983,16 +1111,16 @@ public:
 			{
 				if (onceGet)
 				{
-					nearestPoint = GetNearestPoint(paths);
+					nearestPointID = GetNearestPoint(paths);
 					onceGet = false;
 				}
 				else
 				{
-					if (me->GetDistance2d(paths.paths[nearestPoint.pathID][nearestPoint.pointID].x, paths.paths[nearestPoint.pathID][nearestPoint.pointID].y) > 1)
-						me->GetMotionMaster()->MoveCharge(paths.paths[nearestPoint.pathID][nearestPoint.pointID].x, paths.paths[nearestPoint.pathID][nearestPoint.pointID].y, z, 8);
+					if (me->GetDistance2d(paths.paths[nearestPointID.pathID][nearestPointID.pointID].x, paths.paths[nearestPointID.pathID][nearestPointID.pointID].y) > 1)
+						me->GetMotionMaster()->MoveCharge(paths.paths[nearestPointID.pathID][nearestPointID.pointID].x, paths.paths[nearestPointID.pathID][nearestPointID.pointID].y, z, 8);
 					else
-						nearestPoint.pointID ++;
-					if (nearestPoint.pointID >= paths.pointsCount[nearestPoint.pathID]) me->DespawnOrUnsummon();
+						nearestPointID.pointID ++;
+					if (nearestPointID.pointID >= paths.pointsCount[nearestPointID.pathID]) me->DespawnOrUnsummon();
 				}
 			}
 			else tRun2 -= diff;
@@ -1013,5 +1141,6 @@ void AddSC_gilneas()
 	new go_merchant_square_door();
 	new npc_frightened_citizen();
 	new npc_panicked_citizen();
+	new npc_panicked_citizen_2();
 	new npc_lieutenant_walden();
 }
