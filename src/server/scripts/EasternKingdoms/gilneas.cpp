@@ -339,6 +339,7 @@ public:
 		{
 			if (me->GetDefaultMovementType() == WAYPOINT_MOTION_TYPE) 
 			{
+				me->SetUInt32Value(UNIT_NPC_EMOTESTATE, 0);
 				runDelay = urand(2000, 8000);
 				running = true;
 				onceRun = true;
@@ -356,6 +357,7 @@ public:
 					LoadWaypoints(firstWaypoints);
 					pathID = FindNearestPath(firstWaypoints);
 					me->GetMotionMaster()->MovePath(pathID, false);
+					me->HandleEmoteCommand(EMOTE_ONESHOT_COWER);
 					onceRun = false;
 				}
 				else runDelay -= diff;
