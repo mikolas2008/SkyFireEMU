@@ -415,7 +415,7 @@ public:
 		//Evade or Respawn
 		void Reset()
 		{
-			if (me->GetUInt32Value(UNIT_FIELD_FLAGS) == 134217728)
+			if (me->GetGUIDLow() == 3486400)
 			{
 				tSay = DELAY_SAY_GILNEAS_CITY_GUARD_GATE; //Reset timer
 			}
@@ -424,7 +424,7 @@ public:
 		void UpdateAI(const uint32 diff)
 		{
 			//Out of combat and
-			if (me->GetUInt32Value(UNIT_FIELD_FLAGS) == 134217728)
+			if (me->GetGUIDLow() == 3486400)
 			{
 				//Timed say
 				if(tSay <= diff)

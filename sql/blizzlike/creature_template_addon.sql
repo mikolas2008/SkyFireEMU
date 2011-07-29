@@ -14,5 +14,8 @@ REPLACE INTO `creature_template_addon` VALUES (34863, 0, 0, 7, 0, 65, NULL); -- 
 -- Slain Guards
 REPLACE INTO `creature_template_addon` VALUES (39095, 0, 0, 7, 0, 65, NULL); -- appear dead
 
+-- 44105 Slain Citizen
+REPLACE INTO `creature_template_addon` VALUES (44105, 0, 0, 7, 0, 65, ''); -- dead flag
+
 -- Gwen Armstead 34936 Phase 1
 REPLACE INTO `creature_template_addon` VALUES (34936, 0, 0, 0, 0, 375, NULL); -- Ready 2H
